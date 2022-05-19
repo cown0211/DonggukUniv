@@ -1,0 +1,436 @@
+#%%모듈 import
+#1
+import math
+math.exp(1)
+
+#2
+import math as ma
+ma.exp(1)
+
+#3
+from math import exp
+exp(1)
+
+#4
+from math import *
+log(e)
+#%%math 모듈
+import math
+math.pi
+math.e
+math.log(10)
+math.log(10,10)
+math.exp(1)
+math.sqrt(2)
+math.ceil(3.4)
+math.floor(3.6)
+math.sin(math.pi/2)
+math.cos(math.pi)
+math.factorial(10)
+math.pow(10,2)
+
+#%%numpy random
+import numpy as np
+np.random.random(3)
+np.random.uniform(0,1,size=3)
+np.random.normal(0,10,size=4)
+np.random.binomial(10,0.5,size=4)
+np.random.exponential(5,size=10)
+np.random.chisquare(df=10,size=5)
+
+#%%numpy
+import numpy as np
+x = np.array([2,3,4,5,6,7])
+y = np.array([[2,3,4,5,6,7],[8,9,10,11,12,13]])
+z = np.arange(2,20).reshape(3,6)
+a = np.zeros((3,6))
+a
+np.array(range(2,20)).reshape(3,6)
+
+
+
+
+a = np.arange(1,19).reshape(3,6)
+a[0:3,0:3]
+a[a%3==0]=-1
+
+a[0]
+a[1]
+a[0]*a[1]
+a[0]+a[1]
+
+b=a[0:3,0:3]
+c=a[0:3,3:]
+b
+c
+b-c
+b*c
+
+np.matrix(b)*np.matrix(c)
+np.linalg.inv(b)
+np.matrix(b).I
+b.T
+
+
+#%%scipy stats.
+from scipy import stats
+
+#pdf : r에서 dnorm
+stats.norm.pdf(0,loc=0,scale=1)
+#cdf : r에서 pnorm
+stats.norm.cdf(3,loc=0,scale=1)
+#percent point function : percentile의 x좌표 : r에서 qnorm
+stats.norm.ppf(0.5,loc=0,scale=1)
+#random var generate : r에서 rnorm
+stats.norm.rvs(loc=0,scale=1,size=10)
+
+
+#under mean:5, exponential
+stats.expon.pdf(x=1,scale=5)
+stats.expon.cdf(5,scale=5)
+stats.expon.ppf(0.5,scale=5)
+stats.expon.rvs(scale=5,size=10)
+stats.expon.mean(scale=5)
+stats.expon.var(scale=5)
+
+#F dist. for df1=2, df2=3
+stats.f.pdf(10,2,3)
+stats.f.cdf(10,2,3)
+stats.f.ppf(0.5,2,3)
+
+#mean and var of F(df1,df2)
+stats.f.mean(2,3)
+stats.f.var(4,7)
+
+#one sample t-test
+x=stats.norm.rvs(loc=5,scale=0.5,size=100)
+
+#sample mean
+x.mean()
+#pop var
+x.var(ddof=0)
+#sample var
+x.var(ddof=1)
+#sample std
+x.std(ddof=1)
+
+n=len(x)
+
+#self t- test
+t_statistic=(x.mean()-5)/(x.std(ddof=1)/math.sqrt(len(x)))
+
+if stats.t.cdf(t_statistic,n-1)>0.5 :
+    p_value=2*(1-stats.t.cdf(t_statistic,n-1))
+else:
+    p_value=2*stats.t.cdf(t_statistic,n-1)
+print(t_statistic,p_value)
+
+#t-test result
+stats.ttest_1samp(x,5)
+
+
+#%%matplotlib
+from matplotlib import pyplot as plt
+import numpy as np
+
+x = np.linspace(0,100,100)
+y = np.array([0.1*i+np.random.normal(0,1) for i in x])
+plt.figure(1, figsize=(9, 3))
+
+plt.plot(x,y, color = 'blue', marker = '.', linestyle = 'dashed', linewidth=2,markersize=5)
+#x 생략되면, y의 인덱스로 플롯을 그림.
+#plt.plot help에 검색해서 marker, line type 선택.
+#여러 plot 중첩시 그냥 중첩하면 됨.
+plt.plot(x,y,marker ='.', linewidth = 0)
+plt.plot(x,y,linestyle='dotted', linewidth=1)
+dir(plt)
+plt.xlabel("obs num")
+plt.ylabel("0.1x+normal(0,1)")
+plt.title("plot of x and y")
+plt.suptitle("this is supertitle")
+plt.grid(True)
+plt.legend(['dot','line','another dot'])
+plt.xlim(-10,110)
+plt.ylim(-10,20)
+
+#plt.bar
+plt.bar(x,y)
+dir(plt.bar)
+#plt.hist
+#plt.pie
+
+#interpolation?
+ from scipy.interpolate import interp1d
+model_lin = interp1d(x,y,"linear")
+model_quad = interp1d(x,y,"quadratic")
+contx =np.linspace(0,100,10000)
+plt.plot(contx,model_lin(contx))
+plt.plot(contx,model_quad(contx))
+
+#%%matplotlib
+from matplotlib import pyplot as plt
+#콘솔창 외에 새 창에서 그래프 출력
+%matplotlib auto
+
+#x가 생략되면 자동으로 인덱스
+x = range(0,100)
+y = np.random.normal(0,1,100)
+z = np.random.exponential(1,100)
+
+#easy plot
+plt.scatter(x,y, color = 'darkblue', marker = 'o',label='points')
+plt.plot(x,y, color = 'blue',linestyle='dotted',linewidth=1,label='lines')
+plt.axhline(y=0.5, color='r', linestyle='-')
+plt.axvline(x=40)
+#easy hist
+plt.hist(y,bins=20,range=(-4,4),color='green',alpha=0.7,edgecolor='darkgreen',label='normalhist')
+
+x = range(0,100)
+y = np.random.normal(0,1,100)
+z = np.random.exponential(1,100)
+
+#figure number and size
+plt.figure(1, figsize=(12, 6))
+
+plt.subplot(121)
+plt.scatter(x,y, color = 'darkblue', marker = 'o',label='points')
+plt.plot(x,y, color = 'blue',alpha=0.7,linestyle='dotted',linewidth=1,label='lines')
+plt.xlabel('index number')
+plt.ylabel('Samples from Normal(0,1)')
+plt.title('Plot of X and Y')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(122)
+plt.plot(x,z,color='darkgreen',linestyle='none',marker='o',markersize=2)
+plt.plot(x,z,color='green',linestyle=':',linewidth=1)
+plt.xlabel('index number')
+plt.ylabel('Samples from Exponential(1)')
+plt.title('Plot of X and Z')
+plt.grid(True)
+plt.legend(['dot','line'])
+
+plt.suptitle("Plots")
+
+
+#fig2
+plt.figure(2, figsize=(12, 6))
+
+plt.subplot(121)
+plt.hist(y,bins=20,range=(-4,4),color='blue',alpha=0.7,edgecolor='blue',label='normalhist')
+plt.xlabel('index number')
+plt.ylabel('Samples from Normal(0,1)')
+plt.title('Histogram of X and Y')
+plt.grid(True)
+plt.legend()
+
+plt.subplot(122)
+plt.hist(z,bins=20,range=(0,6),color='green',alpha=0.7,edgecolor='darkgreen',label='exponentialhist')
+plt.xlabel('index number')
+plt.ylabel('Samples from Exp(1)')
+plt.title('Histogram of X and Z')
+plt.grid(True)
+plt.legend()
+
+plt.suptitle("Hists")
+
+#%%piechart
+x = [15,30,35,10,10]
+
+plt.pie(x, explode=(0,0,0.05,0,0), labels=['one','two','three','four','etc'], shadow=False, startangle=90)
+plt.legend()
+#%%basic boxplot
+x = np.random.normal(0,10,1000)
+y = np.random.normal(2,5,1000)
+data = (x,y)
+plt.boxplot(data,labels=['normal(0,10)','normal(2,25)'],sym='bo')
+#%%barchart
+import numpy as np
+from matplotlib import pyplot as plt
+position=[1,2,3,4]
+value=[10,12,8,9]
+plt.bar(position,value,label='groupA')
+plt.xticks(x,['one','two','three','four'])
+plt.legend()
+
+
+a=np.arange(4)
+b=[11,10,13,3]
+c=[10,12,8,9]
+plt.bar(a,b,width=0.3,label='groupA')
+plt.bar(a+0.3,c,width=0.3,label='groupB')
+plt.xticks(a+0.3/2, ('A', 'B', 'C', 'D'))
+plt.legend()
+#%%heatmap
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+#load dataset
+flights = sns.load_dataset('flights')
+
+#create pivot table
+df = flights.pivot('month', 'year', 'passengers')
+
+# heatmap by plt.pcolor()
+plt.pcolor(df)
+plt.xticks(np.arange(0.5, len(df.columns), 1), df.columns)
+plt.yticks(np.arange(0.5, len(df.index), 1), df.index)
+plt.title('Heatmap by plt.pcolor()', fontsize=20)
+plt.xlabel('Year', fontsize=14)
+plt.ylabel('Month', fontsize=14)
+plt.colorbar()
+plt.show()
+
+# heatmap by seaborn
+sns.heatmap(df)
+plt.title('Heatmap of Flight by seaborn', fontsize=20)
+plt.show() 
+
+
+
+#%%pandas
+###Pandas!
+import numpy as np
+import pandas as pd
+
+#creating default integer index 기본적인 0~ index만들기.
+a=np.linspace(0,100,20)
+pd.Series(a)
+
+#multiple dataframe with date index 날짜인덱스로 여러차원 데이터프레임만들기
+a=np.linspace(0,100,20)
+b=np.random.normal(50,10,20)
+c=(b-50)/10
+dates = pd.date_range('20130101', periods=20)
+
+#ndarray를 통한 dataframe 생성
+df2=pd.DataFrame(np.array([a,b,c]).T,columns=['L','T','Z'],index=dates)
+print(df2)
+
+#ndarray를 통한 dataframe 생성
+df2=pd.DataFrame(np.array([a,b,c]).T,columns=['L','T','Z'])
+print(df2)
+
+import numpy as np
+import pandas as pd
+#creating dataframe with dic. 딕셔너리로만들기
+a=np.linspace(0,100,20)
+b=np.random.normal(50,10,20)
+c=(b-50)/10
+dic={'L':a,'T':b,'Z':c}
+df=pd.DataFrame(dic)
+df
+
+#heads and tails
+df.head(2)
+df.tail(5)
+
+#get index, column
+df.index
+df.columns
+df.columns=['l','t','z']
+df
+
+
+#dataframe to numpy array
+df.to_numpy()
+
+#statistic summary
+df.describe()
+
+#transpose
+df.T
+
+#sort
+df.sort_index(ascending=True)
+df.sort_values(by='t',ascending=False)
+
+#indexing
+df['l']
+df[['l','t']]
+df['l'][:10]
+df.iloc[0:3]
+
+df.iloc[3,2]
+df.iloc[0:3,0:2]
+df.iloc[:5,:]
+df.iloc[[0,1],[0,2]]
+
+#boolean indexing
+df[df['l']>30][df['t']>50][df['z']<1]
+df[df['l']>30 & df['t']> 50]
+df[df['z']>0]
+
+#isin 포함되었는지?
+df['l'].isin([0])
+df.isin([0])
+
+#create new column
+df['new']=df['t']-50
+df
+
+#copy dataframe
+df2=df.copy()
+
+#dealing with na
+df2=df2[df2>0]
+
+#na is np.nan
+
+#isna?
+pd.isna(df2)
+df2.isna()
+
+#rows without na
+df2.dropna(how='any')
+
+#fill na
+df2.fillna(0)
+#or
+df2[pd.isna(df2)==True]=1
+
+#mean
+df.mean()
+df.mean(1)
+
+#apply
+df.apply(sum,axis=1)
+
+#custom function apply
+df.apply(lambda i: i.max()-i.min(),axis=0)
+
+#concat
+df=pd.DataFrame(np.random.randn(10,4))
+pieces = [df[:3], df[3:7], df[7:]]
+pd.concat([df[:3],df[3:7],df[7:]])
+
+#merge
+pd.merge(a,b,on='colname')
+
+#grouping
+df = pd.DataFrame({'A': ['foo', 'bar', 'foo', 'bar',
+   ....:                          'foo', 'bar', 'foo', 'foo'],
+   ....:                    'B': ['one', 'one', 'two', 'three',
+   ....:                          'two', 'two', 'one', 'three'],
+   ....:                    'C': np.random.randn(8),
+   ....:                    'D': np.random.randn(8)})
+df
+df.groupby('A').sum()
+
+#워킹디렉토리 확인 및 변경
+import os
+os.getcwd()
+os.chdir('새로운경로')
+
+#read.csv
+data=pd.read_csv('name.csv')
+#write.csv
+dataframename.to_csv('name.csv')
+
+#excel read
+pd.read_excel('name.xlsx', 'Sheet1', index_col=None, na_values=['NA'])
+#excel write
+dataframename.to_excel('name.xlsx',sheet_name='Sheet1')
+

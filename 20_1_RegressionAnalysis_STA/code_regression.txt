@@ -1,0 +1,636 @@
+#%%simple regression
+import pandas as pd
+import math
+import numpy as np
+from scipy import stats
+from matplotlib import pyplot as plt
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+##true model yi ~ 0.5488135039273248 + 0.07151893663724194*xi + ei, ei~N(0,0.5^2)
+x = np.linspace(1,100,100)
+e = stats.norm.rvs(0,scale=1,size= 100)
+np.random.seed(0)
+beta0,beta1 = np.random.random(),0.1*np.random.random()
+y= beta0 + beta1*x + e
+
+#plot of x and y
+plt.scatter(x,y)
+plt.xlabel('x')
+plt.ylabel('y')
+
+
+
+#1.not using formula : using Design Matrix
+#X = np.column_stack(x)
+#create design matrix
+X=sm.add_constant(x)
+result = sm.OLS(y,X).fit()
+result.summary()
+
+#2.using formula
+result2 = smf.ols('y~x',data={'y':y,'x':x}).fit()
+result2.summary()
+
+#condition number : kappa... : multicollinearity
+#jarque-bera : normality test
+
+
+
+##########################################################################
+
+#summary report
+result.summary()
+
+#coefficients. parameters. beta hats.
+result.params
+
+#confidence interval of beta hats
+result.conf_int()
+
+#standard errors of beta hats
+result.bse
+
+#residuals
+result.resid
+#residual plot
+plt.scatter(x,result.resid)
+
+#fitted values
+result.predict()
+result.fittedvalues
+
+#msr, mse, mst
+result.mse_model
+result.mse_resid
+result.mse_total
+
+#sst = ssr+sse
+n = result.nobs
+p = len(result.params)-1
+result.mse_model*p+result.mse_resid*(n-p-1)
+result.mse_total*(n-1)
+
+#draw q-q plot of y
+stats.probplot(y, dist="norm", plot=plt)
+
+#############################################################
+##outlier detection
+influence=result.get_influence()
+
+dir(influence)
+
+#h leverage * studentized residuals
+influence.plot_influence()
+#obs number * cooks distance
+influence.plot_index()
+
+#leverage
+influence.hat_matrix_diag
+#influence
+influence.influence
+#cooks distance
+influence.cooks_distance
+#dfbeta
+influence.dfbeta
+#dffits
+influence.dffits
+
+##residuals
+influence.resid
+#?
+influence.resid_press
+#internal studentized res. 
+influence.resid/np.sqrt(influence.resid_var)
+influence.resid_studentized_internal
+
+#external studentized res. ~ t(n-p-2)
+influence.resid_studentized_external
+
+
+
+
+influence.resid_var
+
+#outlier test. bonferroni. 
+result.outlier_test(method='bonf',alpha=0.05,cutoff=None)
+###############################################################
+
+###############################################################
+##Prediction
+#prediction for used data summary(including ci for mean and obs)
+pred=result.get_prediction()
+pred.summary_frame()
+pred.summary_frame()['mean']
+pred.summary_frame()['mean_se']
+pred.summary_frame()['obs_ci_lower']
+pred.summary_frame()['obs_ci_upper']
+pred.summary_frame()['mean_ci_lower']
+pred.summary_frame()['mean_ci_upper']
+
+
+#predict with new data using matrix model
+x_new=np.linspace(101,200,100)
+X_new=sm.add_constant(x_new)
+result.predict(X_new)
+
+#predict with newdata using formula model... needs to make a dataframe with same column name!
+x_new2=np.linspace(101,200,100)
+x_new2=pd.DataFrame(x_new2,columns=['x'])
+result2.predict(x_new2)
+#or as dic
+result2.predict({'x':x_new2})
+
+####matrix calculate
+Y=np.matrix(y).T
+X=np.matrix(X)
+#coefficients
+((X.T*X).I)*X.T*Y
+result.params
+#se of used data
+cov_matrix=X*(X.T*X).I*X.T*result.mse_resid
+se=np.sqrt(np.diag(cov_matrix))
+se
+#se of new data
+x_new=np.linspace(101,200,50)
+X_new=sm.add_constant(x_new)
+se_new=np.sqrt(result.mse_resid*np.diag((X_new*(X.T*X).I*X_new.T)))
+se_new
+
+#confidence intervals for prediction using new data
+n=result.nobs
+p=len(result.params)-1
+alpha=0.05
+pred_ci_lower=result.predict(X_new)+stats.t.ppf(1-alpha/2,df=n-p-1)*np.sqrt(result.mse_resid+se_new**2)
+pred_ci_upper=result.predict(X_new)-stats.t.ppf(1-alpha/2,df=n-p-1)*np.sqrt(result.mse_resid+se_new**2)
+predmean_ci_lower=result.predict(X_new)+stats.t.ppf(1-alpha/2,df=n-p-1)*np.sqrt(se_new**2)
+predmean_ci_upper=result.predict(X_new)-stats.t.ppf(1-alpha/2,df=n-p-1)*np.sqrt(se_new**2)
+
+###################################################################
+
+
+##visualize
+
+#draw q-q plot of y
+stats.probplot(y, dist="norm", plot=plt)
+
+#residual plot
+plt.scatter(x,result.resid)
+
+#fit plot and CI using matrix model
+plt.figure(1,figsize=(8,4.5))
+plt.scatter(x,y,marker='o',label='realdata')
+plt.scatter(x,result.fittedvalues,marker='.',label='fitted')
+plt.plot(x,result.predict(X),color='blue',linestyle='dashed',label='Regression',markersize=0)
+pred=result.get_prediction().summary_frame()
+plt.plot(x, pred['mean_ci_lower'], 'r-.',label = 'means 95% CI',linewidth=0.7)
+plt.plot(x, pred['mean_ci_upper'], 'r-.',linewidth=0.7)
+plt.plot(x, pred['obs_ci_lower'], 'g-.',label = 'obs 95% CI',linewidth=0.7)
+plt.plot(x, pred['obs_ci_upper'], 'g-.',linewidth=0.7)
+plt.legend()
+
+#fit plot and CI using formula model
+plt.figure(1,figsize=(8,4.5))
+plt.scatter(x,y,marker='.',label='realdata')
+plt.scatter(x,result2.fittedvalues,marker='.',label='fitted')
+plt.plot(x,result2.predict({'x':x}),color='blue',linestyle='dashed',label='Regression',markersize=0)
+pred=result.get_prediction().summary_frame()
+plt.plot(x, pred['mean_ci_lower'], 'r-.',label = 'means 95% CI',linewidth=1)
+plt.plot(x, pred['mean_ci_upper'], 'r-.',linewidth=1)
+plt.plot(x, pred['obs_ci_lower'], 'g-.',label = 'obs 95% CI',linewidth=1)
+plt.plot(x, pred['obs_ci_upper'], 'g-.',linewidth=1)
+plt.xlabel('x')
+plt.legend()
+
+#prediction plot and CI using matrix model
+plt.figure(1,figsize=(8,4.5))
+plt.scatter(x_new,result.predict(X_new),marker='.',label='predicted')
+plt.plot(x_new,pred_ci_lower, 'b-.',label = 'Prediction 95% CI',linewidth=1)
+plt.plot(x_new,pred_ci_upper, 'b-.',linewidth=1)
+plt.plot(x_new,predmean_ci_lower, 'y-.',label = 'Predictionmean 95% CI',linewidth=1)
+plt.plot(x_new,predmean_ci_upper, 'y-.',linewidth=1)
+plt.xlabel('x_new')
+plt.legend()
+
+
+#simple diagnostics
+#residual q-q plot
+influence=result.get_influence()
+stats.probplot(influence.resid, dist="norm", plot=plt)
+
+#residual plot
+plt.scatter(x,result.resid)
+plt.xlabel('x')
+plt.ylabel('residuals')
+
+#residual * fittedvalues
+plt.scatter(result.fittedvalues,result.resid)
+plt.xlabel('fittedvalues')
+plt.ylabel('residuals')
+
+
+#%%multiple linear regression
+import pandas as pd
+import math
+import numpy as np
+from scipy import stats
+from matplotlib import pyplot as plt
+from itertools import combinations as comb
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+
+# Load data
+data = sm.datasets.get_rdataset("hills", "DAAG").data
+data
+
+#pairplot using seaborn
+import seaborn as sns
+sns.pairplot(data, hue=None,kind='scatter')
+
+# Fit regression model using formula
+#fullmodel
+result = smf.ols('time~dist+climb', data=data).fit()
+result.summary()
+
+#interceptonly model
+result_intercept = smf.ols('time~1', data=data).fit()
+
+#####################################
+####matrix calculate
+
+# Using matrix algebra
+#create design matrix
+X = data[['dist','climb']]
+X = sm.add_constant(X)
+y = data['time']
+
+
+result = sm.OLS(y,X).fit()
+result.summary()
+
+#as matrix
+Y=np.matrix(y).T
+X=np.matrix(X)
+
+#coefficients
+((X.T*X).I)*X.T*Y
+result.params
+
+#cov_matrix of yhat
+cov_matrix=X*(X.T*X).I*X.T*result.mse_resid
+cov_matrix
+
+se=np.sqrt(np.diag(cov_matrix))
+se
+
+#manually computed ci for yhat
+alpha=0.05
+result.fittedvalues+stats.t.ppf(1-alpha/2,result.nobs-3)*se
+result.fittedvalues-stats.t.ppf(1-alpha/2,result.nobs-3)*se
+
+
+#Confidence intervals of mean, prediction
+pred=result.get_prediction().summary_frame()
+pred['mean_ci_lower']
+
+
+
+
+############################################################
+##dignostics
+#residual q-q plot
+influence=result.get_influence()
+stats.probplot(influence.resid, dist="norm", plot=plt)
+
+#fittedvalues * residuals
+plt.figure(1,(10,5))
+plt.subplot(121)
+plt.scatter(result.fittedvalues,influence.resid,marker='^')
+plt.xlabel('fittedvalues')
+plt.ylabel('residuals')
+#fittedvalues * studentized.residual
+plt.subplot(122)
+plt.scatter(result.fittedvalues,influence.resid_studentized_internal,marker='^',c='red')
+plt.xlabel('fittedvalues')
+plt.ylabel('studentized residuals internal')
+
+
+plt.figure(1,(10,5))
+plt.subplot(121)
+plt.scatter(result.fittedvalues,influence.resid,marker='^')
+plt.xlabel('fittedvalues')
+plt.ylabel('residuals')
+#fittedvalues * studentized.residual
+plt.subplot(122)
+plt.scatter(result.fittedvalues,influence.resid_studentized_internal,marker='^',c='red')
+plt.xlabel('fittedvalues')
+plt.ylabel('studentized residuals internal')
+
+
+##### outlier detecting plots
+plt.figure(1,(13,10))
+#leverage
+influence.hat_matrix_diag
+plt.subplot(221)
+plt.scatter(np.arange(result.nobs),influence.hat_matrix_diag)
+plt.ylabel('leverage')
+plt.grid()
+
+#influence
+influence.influence
+plt.subplot(222)
+plt.scatter(np.arange(result.nobs),influence.influence)
+plt.ylabel('influence')
+plt.grid()
+
+#cooks distance
+influence.cooks_distance
+plt.subplot(223)
+plt.scatter(np.arange(result.nobs),influence.cooks_distance[0])
+plt.ylabel('cooks distance')
+plt.grid()
+
+#dffits
+influence.dffits
+plt.subplot(224)
+plt.scatter(np.arange(result.nobs),influence.dffits[0])
+plt.ylabel('dffits')
+plt.grid()
+
+plt.suptitle('Where is the Outlier??')
+
+#dfbeta
+influence.dfbeta
+
+#outlier test. bonferroni. 
+result.outlier_test(method='bonf',alpha=0.05,cutoff=0.05)
+
+#potential outliers??
+data.iloc[[6,10,17],:]
+#############################################################
+###multicollinerity
+#pairplot using seaborn
+import seaborn as sns
+sns.pairplot(data, hue=None,kind='scatter')
+
+#correlation matrix
+data.corr()
+
+#vif
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+vif = pd.DataFrame()
+vif["vif"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+vif["columns"] = X.columns
+vif
+
+#condition number
+result.summary()
+#################################################################
+
+#exclude potential outliers and refit
+newdata=data.drop(data.index[[6,10,17]])
+result = smf.ols('time~dist+climb', data=newdata).fit()
+result.summary()
+
+#again residual q-q plot
+influence=result.get_influence()
+stats.probplot(influence.resid, dist="norm", plot=plt)
+
+#intercept only model
+intercept_result = smf.ols('time~1', data=newdata).fit()
+intercept_result.summary()
+
+#testing fullmodel vs. nestedmodel / H0: reduced model is better, Ha:full model is effective.
+from statsmodels.stats.anova import anova_lm
+anova_lm(intercept_result,result,typ=1)
+result.summary()
+############################################################################################################
+#%%interactions
+import pandas as pd
+import math
+import numpy as np
+from scipy import stats
+from matplotlib import pyplot as plt
+from itertools import combinations as comb
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import os
+os.chdir('C:\\Users\\carod\\Google 드라이브\\연구실\\파이썬')
+data=pd.read_csv('salary.csv')
+"""
+S : salarys
+X : experience (years)
+E : education (1:Bachelor's ,2:Master's ,3:Ph.D)
+M : management (1:management ,0:not management)
+"""
+#정수형 저장자료를 categorical 하게 바꿔주기
+data.dtypes
+data['E']=data['E'].astype(dtype='category')
+data['M']=data['M'].astype(dtype='category')
+
+
+plt.plot(data[(data['E']==1) & (data['M']==0)]['X'],data[(data['E']==1) & (data['M']==0)]['S'],color='red',marker='D')
+plt.plot(data[(data['E']==2) & (data['M']==0)]['X'],data[(data['E']==2) & (data['M']==0)]['S'],color='green',marker='D')
+plt.plot(data[(data['E']==3) & (data['M']==0)]['X'],data[(data['E']==3) & (data['M']==0)]['S'],color='blue',marker='D')
+plt.plot(data[(data['E']==1) & (data['M']==1)]['X'],data[(data['E']==1) & (data['M']==1)]['S'],color='red',marker='^')
+plt.plot(data[(data['E']==2) & (data['M']==1)]['X'],data[(data['E']==2) & (data['M']==1)]['S'],color='green',marker='^')
+plt.plot(data[(data['E']==3) & (data['M']==1)]['X'],data[(data['E']==3) & (data['M']==1)]['S'],color='blue',marker='^')
+plt.ylabel('S')
+plt.xlabel('X')
+
+#Full model with interaction
+result1=smf.ols('S~X+E+M+E:M',data=data).fit()
+result1.summary()
+
+#Nested model without interaction
+result2=smf.ols('S~X+E+M',data=data).fit()
+
+#F testing fullmodel vs. nestedmodel / H0: reduced model is better, Ha:full model is effective.
+from statsmodels.stats.anova import anova_lm
+anova_lm(result2,result1,typ=1)
+
+#interaction is effective
+result1.summary()
+
+#%% model selection.
+import statsmodels.formula.api as smf
+
+def forward_selected(data, response):
+    remaining = set(data.columns)
+    remaining.remove(response)
+    selected = []
+    current_score, best_new_score = 0.0, 0.0
+    while remaining and current_score == best_new_score:
+        scores_with_candidates = []
+        for candidate in remaining:
+            formula = "{} ~ {} + 1".format(response,
+                                           ' + '.join(selected + [candidate]))
+            score = smf.ols(formula, data).fit().rsquared_adj
+            scores_with_candidates.append((score, candidate))
+        scores_with_candidates.sort()
+        best_new_score, best_candidate = scores_with_candidates.pop()
+        if current_score < best_new_score:
+            remaining.remove(best_candidate)
+            selected.append(best_candidate)
+            current_score = best_new_score
+            
+    formula = "{} ~ {} + 1".format(response,
+                                   ' + '.join(selected))
+    model = smf.ols(formula, data).fit()
+    return(model)
+
+
+#example
+#add interaction E*M term
+data['EM']=pd.Series((pd.Series(data['E'],dtype='int')-1)*pd.Series(data['M'],dtype='int'),dtype='category')
+data=data.drop('Unnamed: 0',axis=1)
+print(list(data.columns))
+
+model_adj = forward_selected(data, 'S')
+print(model_adj.model.formula)
+model_adj.rsquared_adj
+
+
+#모든 모형의 경우의수에대해 adjR,aic,bic 계산해주는 함수 
+def joonsselect(data,response,sortby='adjR'):
+    score_adj=[]
+    score_aic=[]
+    score_bic=[]
+    model=[]
+    
+    for j in range(1,len(data.columns)):
+        varlist=pd.DataFrame(comb(data.columns.drop(response),j),dtype=str)
+        varlist=varlist.apply(lambda x: '+'.join(x),axis=1)
+    
+        for i in range(len(varlist)):
+            formula ='smf.ols("%s~%s",data=data).fit()' % (response,varlist[i])
+            model.append(eval(formula).model.formula)
+            score_adj.append(eval(formula+'.rsquared_adj'))
+            score_aic.append(eval(formula+'.aic'))
+            score_bic.append(eval(formula+'.bic'))
+    
+    summary = pd.DataFrame({'Model':model,'adjR':score_adj,'aic':score_aic,'bic':score_bic})
+    if sortby=='adjR':
+        out=summary.sort_values(by=sortby,ascending=False)
+    elif sortby==None:
+        out=summary
+    else:
+        out=summary.sort_values(by=sortby,ascending=True)
+    return(out)
+
+
+joonsselect(data,'S',sortby='adjR')
+joonsselect(data,'S',sortby='aic')
+joonsselect(data,'S',sortby='bic')
+
+
+#full model과 비교. 일치한다.
+model_adj.summary()
+result1.summary()
+
+data = sm.datasets.get_rdataset("hills", "DAAG").data
+data
+
+
+import seaborn as sns
+sns.pairplot(data, hue=None,kind='scatter')
+
+# Fit regression model using formula
+#fullmodel
+result = smf.ols('time~dist+climb', data=data).fit()
+result.summary()
+
+influence=result.get_influence()
+stats.probplot(influence.resid, dist="norm", plot=plt)
+
+plt.figure(1,(10,5))
+plt.subplot(121)
+plt.scatter(result.fittedvalues,influence.resid,marker='^')
+plt.xlabel('fittedvalues')
+plt.ylabel('residuals')
+
+plt.subplot(122)
+plt.scatter(result.fittedvalues,influence.resid_studentized_internal,marker='^',color='red')
+plt.xlabel('fittedvalues')
+plt.ylabel('studentized residuals internal')
+
+##outlier detection
+influence=result.get_influence()
+
+#leverage * studentized residuals
+influence.plot_influence()
+influence.plot_index()
+
+#leverage
+influence.hat_matrix_diag
+#influence
+influence.influence
+#cooks distance
+influence.cooks_distance
+#dfbeta
+influence.dfbeta
+#diffits
+influence.dffits
+
+#outlier test, bonferroni
+result.outlier_test(method='bonf',alpha=0.05,cutoff=None)
+
+### outlier detecting plots
+plt.figure(1,(13,10))
+#leverage
+influence.hat_matrix_diag
+plt.subplot(221)
+plt.scatter(np.arange(result.nobs),influence.hat_matrix_diag)
+plt.ylabel('leverage')
+plt.grid()
+
+#influence
+influence.influence
+plt.subplot(222)
+plt.scatter(np.arange(result.nobs),influence.influence)
+plt.ylabel('influence')
+plt.grid()
+
+#cooks distance
+influence.cooks_distance
+plt.subplot(223)
+plt.scatter(np.arange(result.nobs),influence.cooks_distance[0])
+plt.ylabel('cooks distance')
+plt.grid()
+
+#dffits
+influence.dffits
+plt.subplot(224)
+plt.scatter(np.arange(result.nobs),influence.dffits[0])
+plt.ylabel('dffits')
+plt.grid()
+
+### multicollinerity
+#pairplot using seaborn
+import seaborn as sns
+sns.pairplot(data, kind='scatter')
+newdata=data.drop(data.index[[6,10,17]])
+X = data[['dist','climb']]
+X = sm.add_constant(X)
+
+# correlation matrix
+data.corr()
+
+#vif
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+vif = pd.DataFrame()
+vif["vif"] = [variance_inflation_factor(X.values,i) for i in range(X.shape[1])]
+vif["colums"] = X.columns
+vif
+
+#intercept only model
+
+intercept_result = smf.ols('time~1', data=newdata).fit()
+intercept_result.summary()
+
+#testing fullmodel vs. nestedmodel / H0 : reduced model is better, Ha : full model is effective.
+from statsmodels.stats.anova import anova_lm
+anova_lm(intercept_result,result,typ=1)
+
+result.summary()
