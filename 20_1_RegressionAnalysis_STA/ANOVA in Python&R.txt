@@ -1,0 +1,95 @@
+##################################################################
+###################### ANOVA in Python #############################
+##################################################################
+
+### One-way ANOVA Example ###
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.graphics.factorplots import interaction_plot
+
+df = pd.read_csv('http://wolfpack.hnu.ac.kr/Stat_Notes/example_data/iris.csv')
+df.info()
+
+grouped=df['Sepal_Length'].groupby(df['group'])
+summary_group = pd.DataFrame(grouped.describe())
+summary_group
+
+sns.boxplot(x = 'group', y = 'Sepal_Length', data = df)
+
+results = smf.ols('Sepal_Length ~ group', data = df).fit()
+results.summary()
+
+aov_table = sm.stats.anova_lm(results, typ = 2)
+aov_table
+
+### Two-way ANOVA Example ###
+
+df = pd.read_csv('http://wolfpack.hnu.ac.kr/Stat_Notes/elem_stat/Stat_methods/Jobs.csv')
+df.info()
+
+grouped1=df.groupby(['Gender','Education'])
+summary_group1 = pd.DataFrame(grouped1.describe())
+summary_group1
+
+grouped2=df.groupby('Gender')
+grouped3=df.groupby('Education')
+
+summary_group2 = pd.DataFrame(grouped2.describe())
+summary_group3 = pd.DataFrame(grouped3.describe())
+
+fig = interaction_plot(df.Education, df.Gender, df.Length)
+
+results = smf.ols('Length ~ Gender * Education', data = df).fit()
+results.summary()
+
+aov_table = sm.stats.anova_lm(results, typ = 2)
+aov_table
+
+
+##################################################################
+######################## ANOVA in R ###############################
+##################################################################
+
+
+### One-way ANOVA Example ###
+
+head(iris)
+attach(iris)
+
+str(iris)
+
+aggregate(Sepal.Length, by=list(Species), summary)
+
+boxplot(Sepal.Length~Species,
+      main="Sepal's Length", 
+      xlab = "Varieties of plant", 
+      ylab = "Length of Sepal", data = iris)
+      
+      
+result=aov(Sepal.Length~Species, data=iris)
+summary(result)
+
+### Two-way ANOVA Example ###
+
+jobs = read.csv('http://wolfpack.hnu.ac.kr/Stat_Notes/elem_stat/Stat_methods/Jobs.csv', head = T)
+attach(jobs)
+
+str(jobs)
+
+aggregate(Length, by=list(Gender, Education), summary)
+
+tapply(Length, Gender, summary)
+tapply(Length, Education, summary)
+
+
+par(mfrow = c(1, 4))
+plot(Length ~ Gender, main="Boxplot by Gender")
+plot(Length ~ Education, main="Boxplot by Education")
+interaction.plot(Gender, Education, Length, bty='l', main="Interaction Effect Plot")
+interaction.plot(Education, Gender, Length, bty='l', main="Interaction Effect Plot")
+
+result = aov(Length ~ Gender + Education + Gender:Education)
+summary(result)
